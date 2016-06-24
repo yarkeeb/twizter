@@ -21,16 +21,22 @@ type TwitterBot struct {
   client *anaconda.TwitterApi
 }
 
-func New(token string, consumer_key string, consumer_secret string) *TwitterBot {
-  bot, err := tgbotapi.NewBotAPI(token)
+func New(arr []byte) *TwitterBot {
+  var config Config
+  err := json.Unmarshal(arr, &config)
+  if err != nil {
+    log.Panic(err)
+  }
+  
+  bot, err := tgbotapi.NewBotAPI(config.TelegramToken)
   if err != nil {
     log.Panic(err)
   }
   bot.Debug = true
   log.Printf("Authorized on account %s", bot.Self.UserName)
   
-  anaconda.SetConsumerKey(consumer_key)
-  anaconda.SetConsumerSecret(consumer_secret)
+  anaconda.SetConsumerKey(config.TwitterConsumerKey)
+  anaconda.SetConsumerSecret(config.TwitterConsumerSecret)
   
   twitterBot := new(TwitterBot)
   twitterBot.botApi = bot
@@ -38,18 +44,27 @@ func New(token string, consumer_key string, consumer_secret string) *TwitterBot 
   return twitterBot
 }
 
+func (tb *TwitterBot) ProcessUpdate(update tgbotapi.Update) {
+  //process update.Message and execute commands
+}
+
+func (tb *TwitterBot) Start(update tgbotapi.Update) {
+  //send message to authenticate.
+  msg := tgbotapi.NewMessage(update.Message.Chat.ID, "Hello there! To start please authorize in twitter just following this link:\r\n")
+  msg.ReplyToMessageID = update.Message.MessageID
+  tb.botApi.Send(msg)
+}
+
 func main() {
   configPtr := flag.String("config", "./config/config.json", "Path to config file")
   flag.Parse()
 
-  var config Config
   array, err := ioutil.ReadFile(*configPtr)
   if err != nil {
     log.Panic(err)
   }
-  json.Unmarshal(array, &config)
 
-  twitBot := New(config.TelegramToken, config.TwitterConsumerKey, config.TwitterConsumerSecret)
+  twitBot := New(array)
 
 	url, creds, err := anaconda.AuthorizationURL("oob")
 	if err != nil {
@@ -64,6 +79,11 @@ func main() {
 		if update.Message == nil {
 			continue
 		}
+
+    if update.Message.Text == "test_start" {
+      twitBot.Start(update)
+      continue
+    }
 
     if _, err := strconv.Atoi(update.Message.Text); err == nil && twitBot.client == nil {
       user_creds, _, err := anaconda.GetCredentials(creds, update.Message.Text)
