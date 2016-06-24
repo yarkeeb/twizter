@@ -1,2 +1,3 @@
 #Twitter bot written on Go
-WIP
+Simple twitter bot. 
+Can search latest tweets
