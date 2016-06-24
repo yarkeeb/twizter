@@ -51,7 +51,7 @@ func main() {
 
 	anaconda.SetConsumerKey(config.TwitterConsumerKey)
 	anaconda.SetConsumerSecret(config.TwitterConsumerSecret)
-	url, creds, err := anaconda.AuthorizationURL("https://agile-spire-14188.herokuapp.com/twitter_callback")
+	url, creds, err := anaconda.AuthorizationURL("http://127.0.0.1:8080/twitter_callback")
 	if err != nil {
 		log.Panic(err)
 	}
@@ -59,7 +59,7 @@ func main() {
 	twitter.TempCreds = creds
 
 	http.HandleFunc("/twitter_callback", handler)
-	go http.ListenAndServe(":443", nil)
+	go http.ListenAndServe(":8080", nil)
 
 	bot, err := tgbotapi.NewBotAPI(config.TelegramToken)
 	if err != nil {
