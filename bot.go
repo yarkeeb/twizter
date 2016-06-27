@@ -10,7 +10,7 @@ import (
 	"strings"
 )
 
-//Configuration struct for setting up Twizter
+//Config struct for setting up Twizter
 type Config struct {
 	TelegramToken         string `json:"token"`
 	TwitterConsumerKey    string `json:"consumer_key"`
@@ -26,20 +26,20 @@ type message struct {
 	Args    []string
 }
 
-//Handler for a bot command
+//CmdFunc handler for a bot command
 type CmdFunc func(m *message)
 
-//Map for storing handlers to bot commands
+//CmdMap for storing handlers to bot commands
 type CmdMap map[string]CmdFunc
 
-//Basic bot structure
+//Twizter basic bot structure
 type Twizter struct {
-	botApi   *tgbotapi.BotAPI
+	botAPI   *tgbotapi.BotAPI
 	client   *anaconda.TwitterApi
 	commands CmdMap
 }
 
-//Create new Twizter bot
+//New - create new Twizter bot
 func New(arr []byte) *Twizter {
 	var config Config
 	err := json.Unmarshal(arr, &config)
@@ -58,7 +58,7 @@ func New(arr []byte) *Twizter {
 	anaconda.SetConsumerSecret(config.TwitterConsumerSecret)
 
 	Twizter := new(Twizter)
-	Twizter.botApi = bot
+	Twizter.botAPI = bot
 	Twizter.client = anaconda.NewTwitterApi(config.TwitterAccessToken, config.TwitterAccessSecret)
 	Twizter.commands = Twizter.getDefaultCommands()
 	return Twizter
@@ -73,7 +73,7 @@ func (tb *Twizter) getDefaultCommands() CmdMap {
 
 }
 
-//Process messages from telegram
+//ProcessUpdate - process messages from telegram
 func (tb *Twizter) ProcessUpdate(m *tgbotapi.Message) {
 	if m == nil {
 		return
@@ -102,14 +102,14 @@ func (tb *Twizter) parseMessage(msg *tgbotapi.Message) *message {
 	return &message{Cmd: cmd, Args: args, Message: msg}
 }
 
-//Function to handle bot /start command
+//Start function to handle bot /start command
 func (tb *Twizter) Start(m *message) {
 	msg := tgbotapi.NewMessage(m.Message.Chat.ID, "Hello there! I'm twitter bot.\r\nTo search tweets, type: /search <tweet>")
 	msg.ReplyToMessageID = m.Message.MessageID
-	tb.botApi.Send(msg)
+	tb.botAPI.Send(msg)
 }
 
-//Function to handle bot /search command
+//Search function to handle bot /search command
 func (tb *Twizter) Search(m *message) {
 	for _, str := range m.Args {
 		searchResult, _ := tb.client.GetSearch(str, nil)
@@ -119,7 +119,7 @@ func (tb *Twizter) Search(m *message) {
 		for _, tweet := range searchResult.Statuses {
 			msg.Text += tweet.Text + "\r\n=======\r\n"
 		}
-		tb.botApi.Send(msg)
+		tb.botAPI.Send(msg)
 	}
 	return
 }
@@ -135,9 +135,9 @@ func main() {
 
 	twitBot := New(array)
 
-	var ucfg tgbotapi.UpdateConfig = tgbotapi.NewUpdate(0)
+	ucfg := tgbotapi.NewUpdate(0)
 	ucfg.Timeout = 60
-	updates, err := twitBot.botApi.GetUpdatesChan(ucfg)
+	updates, err := twitBot.botAPI.GetUpdatesChan(ucfg)
 
 	for update := range updates {
 		twitBot.ProcessUpdate(update.Message)
